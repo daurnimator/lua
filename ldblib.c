@@ -190,6 +190,31 @@ static int db_getinfo (lua_State *L) {
 }
 
 
+static int db_getconstant (lua_State *L) {
+  int arg;
+  lua_State *L1 = getthread(L, &arg);
+  lua_Debug ar;
+  int nvar = (int)luaL_checkinteger(L, arg + 2);  /* local-variable index */
+  if (lua_isfunction(L, arg + 1)) {  /* function argument? */
+    lua_pushvalue(L, arg + 1);  /* push function */
+    return lua_getconstant(L, NULL, nvar);
+  }
+  else {  /* stack-level argument */
+    int level = (int)luaL_checkinteger(L, arg + 1);
+    if (!lua_getstack(L1, level, &ar))  /* out of range? */
+      return luaL_argerror(L, arg+1, "level out of range");
+    checkstack(L, L1, 1);
+    if (lua_getconstant(L1, &ar, nvar)) {
+      lua_xmove(L1, L, 1);  /* move value */
+      return 1;
+    }
+    else {
+      return 0;
+    }
+  }
+}
+
+
 static int db_getlocal (lua_State *L) {
   int arg;
   lua_State *L1 = getthread(L, &arg);
@@ -433,6 +458,7 @@ static const luaL_Reg dblib[] = {
   {"getuservalue", db_getuservalue},
   {"gethook", db_gethook},
   {"getinfo", db_getinfo},
+  {"getconstant", db_getconstant},
   {"getlocal", db_getlocal},
   {"getregistry", db_getregistry},
   {"getmetatable", db_getmetatable},
