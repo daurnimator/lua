@@ -130,6 +130,31 @@ static const char *upvalname (Proto *p, int uv) {
 }
 
 
+LUA_API int lua_getconstant (lua_State *L, const lua_Debug *ar, int n) {
+  int ret = 0;
+  Proto *p = NULL;
+  lua_lock(L);
+  if (ar == NULL) {
+    if (isLfunction(L->top - 1))
+      p = clLvalue(L->top - 1)->p;
+  }
+  else {
+    StkId func = ar->i_ci->func;
+    if (ttisclosure(func))
+      p = clvalue(func)->l.p;
+  }
+  if (p && n > 0 && n <= p->sizek) {
+    TValue *v;
+    v = &p->k[n-1];
+    setobj2s(L, L->top, v);
+    api_incr_top(L);
+    ret = 1;
+  }
+  lua_unlock(L);
+  return ret;
+}
+
+
 static const char *findvararg (CallInfo *ci, int n, StkId *pos) {
   int nparams = clLvalue(ci->func)->p->numparams;
   if (n >= cast_int(ci->u.l.base - ci->func) - nparams)

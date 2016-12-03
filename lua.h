@@ -423,6 +423,7 @@ typedef void (*lua_Hook) (lua_State *L, lua_Debug *ar);
 
 LUA_API int (lua_getstack) (lua_State *L, int level, lua_Debug *ar);
 LUA_API int (lua_getinfo) (lua_State *L, const char *what, lua_Debug *ar);
+LUA_API int (lua_getconstant) (lua_State *L, const lua_Debug *ar, int n);
 LUA_API const char *(lua_getlocal) (lua_State *L, const lua_Debug *ar, int n);
 LUA_API const char *(lua_setlocal) (lua_State *L, const lua_Debug *ar, int n);
 LUA_API const char *(lua_getupvalue) (lua_State *L, int funcindex, int n);
