@@ -427,6 +427,17 @@ static int db_traceback (lua_State *L) {
   return 1;
 }
 
+static int db_newconstuserdata (lua_State *L) {
+  size_t len;
+  const char* str = luaL_checklstring(L, 1, &len);
+  int t = lua_type(L, 2);
+  luaL_argcheck(L, t == LUA_TNONE || t == LUA_TNIL || t == LUA_TTABLE, 2,
+                    "nil or table expected");
+  lua_settop(L, 2);
+  lua_newconstuserdata(L, (void*)str, len);
+  return 1;
+}
+
 
 static const luaL_Reg dblib[] = {
   {"debug", db_debug},
@@ -445,6 +456,7 @@ static const luaL_Reg dblib[] = {
   {"setmetatable", db_setmetatable},
   {"setupvalue", db_setupvalue},
   {"traceback", db_traceback},
+  {"newconstuserdata", db_newconstuserdata},
   {NULL, NULL}
 };
 
