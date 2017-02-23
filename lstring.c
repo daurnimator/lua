@@ -246,3 +246,28 @@ Udata *luaS_newudata (lua_State *L, size_t s) {
   return u;
 }
 
+
+unsigned int luaS_hashconstudata (CUdata *cu) {
+  lua_assert(cu->tt == LUA_TCONSTUSERDATA);
+  if (cu->cuhashash == 0) {  /* no hash? */
+    cu->hash = luaS_hash(getcudatamem(cu), cu->len, cu->hash);
+    cu->cuhashash = 1;  /* now it has its hash */
+  }
+  return cu->hash;
+}
+
+
+CUdata *luaS_newconstudata (lua_State *L, void *data, size_t s, struct Table *metatable) {
+  CUdata *cu;
+  GCObject *o;
+  if (s > MAX_SIZE - sizeof(CUdata))
+    luaM_toobig(L);
+  lua_assert(data != NULL);  /* otherwise 'memcmp'/'memcpy' are undefined */
+  o = luaC_newobj(L, LUA_TCONSTUSERDATA, sizelcudata(s));
+  cu = gco2cu(o);
+  cu->len = s;
+  cu->metatable = metatable;
+  cu->hash = G(L)->seed ^ point2uint(metatable);
+  memcpy(getcudatamem(cu), data, s);
+  return cu;
+}

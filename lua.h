@@ -70,8 +70,9 @@ typedef struct lua_State lua_State;
 #define LUA_TFUNCTION		6
 #define LUA_TUSERDATA		7
 #define LUA_TTHREAD		8
+#define LUA_TCONSTUSERDATA	9
 
-#define LUA_NUMTAGS		9
+#define LUA_NUMTAGS		10
 
 
 
@@ -248,6 +249,7 @@ LUA_API int (lua_rawgetp) (lua_State *L, int idx, const void *p);
 
 LUA_API void  (lua_createtable) (lua_State *L, int narr, int nrec);
 LUA_API void *(lua_newuserdata) (lua_State *L, size_t sz);
+LUA_API void *(lua_newconstuserdata) (lua_State *L, void* data, size_t sz);
 LUA_API int   (lua_getmetatable) (lua_State *L, int objindex);
 LUA_API int  (lua_getuservalue) (lua_State *L, int idx);
 

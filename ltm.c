@@ -30,6 +30,7 @@ LUAI_DDEF const char *const luaT_typenames_[LUA_TOTALTAGS] = {
   "no value",
   "nil", "boolean", udatatypename, "number",
   "string", "table", "function", udatatypename, "thread",
+  udatatypename,
   "proto" /* this last case is used for tests only */
 };
 
@@ -75,6 +76,9 @@ const TValue *luaT_gettmbyobj (lua_State *L, const TValue *o, TMS event) {
       break;
     case LUA_TUSERDATA:
       mt = uvalue(o)->metatable;
+      break;
+    case LUA_TCONSTUSERDATA:
+      mt = cuvalue(o)->metatable;
       break;
     default:
       mt = G(L)->mt[ttnov(o)];

@@ -17,6 +17,9 @@
 #define sizeludata(l)	(sizeof(union UUdata) + (l))
 #define sizeudata(u)	sizeludata((u)->len)
 
+#define sizelcudata(l)	(sizeof(union UCUdata) + (l))
+#define sizecudata(cu)	sizelcudata((cu)->len)
+
 #define luaS_newliteral(L, s)	(luaS_newlstr(L, "" s, \
                                  (sizeof(s)/sizeof(char))-1))
 
@@ -44,6 +47,8 @@ LUAI_FUNC Udata *luaS_newudata (lua_State *L, size_t s);
 LUAI_FUNC TString *luaS_newlstr (lua_State *L, const char *str, size_t l);
 LUAI_FUNC TString *luaS_new (lua_State *L, const char *str);
 LUAI_FUNC TString *luaS_createlngstrobj (lua_State *L, size_t l);
+LUAI_FUNC unsigned int luaS_hashconstudata (CUdata *cu);
+LUAI_FUNC CUdata *luaS_newconstudata (lua_State *L, void *data, size_t s, struct Table *metatable);
 
 
 #endif

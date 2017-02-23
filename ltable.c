@@ -126,6 +126,8 @@ static Node *mainposition (const Table *t, const TValue *key) {
       return hashpow2(t, luaS_hashlongstr(tsvalue(key)));
     case LUA_TBOOLEAN:
       return hashboolean(t, bvalue(key));
+    case LUA_TCONSTUSERDATA:
+      return hashpow2(t, luaS_hashconstudata(cuvalue(key)));
     case LUA_TLIGHTUSERDATA:
       return hashpointer(t, pvalue(key));
     case LUA_TLCF:

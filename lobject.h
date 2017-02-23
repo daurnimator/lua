@@ -155,6 +155,7 @@ typedef struct lua_TValue {
 #define ttisLclosure(o)		checktag((o), ctb(LUA_TLCL))
 #define ttislcf(o)		checktag((o), LUA_TLCF)
 #define ttisfulluserdata(o)	checktag((o), ctb(LUA_TUSERDATA))
+#define ttisconstuserdata(o)	checktag((o), ctb(LUA_TCONSTUSERDATA))
 #define ttisthread(o)		checktag((o), ctb(LUA_TTHREAD))
 #define ttisdeadkey(o)		checktag((o), LUA_TDEADKEY)
 
@@ -168,6 +169,7 @@ typedef struct lua_TValue {
 #define pvalue(o)	check_exp(ttislightuserdata(o), val_(o).p)
 #define tsvalue(o)	check_exp(ttisstring(o), gco2ts(val_(o).gc))
 #define uvalue(o)	check_exp(ttisfulluserdata(o), gco2u(val_(o).gc))
+#define cuvalue(o)	check_exp(ttisconstuserdata(o), gco2cu(val_(o).gc))
 #define clvalue(o)	check_exp(ttisclosure(o), gco2cl(val_(o).gc))
 #define clLvalue(o)	check_exp(ttisLclosure(o), gco2lcl(val_(o).gc))
 #define clCvalue(o)	check_exp(ttisCclosure(o), gco2ccl(val_(o).gc))
@@ -230,6 +232,11 @@ typedef struct lua_TValue {
 #define setuvalue(L,obj,x) \
   { TValue *io = (obj); Udata *x_ = (x); \
     val_(io).gc = obj2gco(x_); settt_(io, ctb(LUA_TUSERDATA)); \
+    checkliveness(L,io); }
+
+#define setcuvalue(L,obj,x) \
+  { TValue *io = (obj); CUdata *x_ = (x); \
+    val_(io).gc = obj2gco(x_); settt_(io, ctb(LUA_TCONSTUSERDATA)); \
     checkliveness(L,io); }
 
 #define setthvalue(L,obj,x) \
@@ -351,6 +358,14 @@ typedef struct Udata {
   union Value user_;  /* user value */
 } Udata;
 
+typedef struct CUdata {
+  CommonHeader;
+  lu_byte cuhashash;  /* "has hash" */
+  unsigned int hash;
+  struct Table *metatable;
+  size_t len;  /* number of bytes */
+} CUdata;
+
 
 /*
 ** Ensures that address after this type is always fully aligned.
@@ -360,6 +375,10 @@ typedef union UUdata {
   Udata uv;
 } UUdata;
 
+typedef union UCUdata {
+  L_Umaxalign dummy;  /* ensures maximum alignment for 'local' udata */
+  CUdata cuv;
+} UCUdata;
 
 /*
 **  Get the address of memory block inside 'Udata'.
@@ -367,6 +386,9 @@ typedef union UUdata {
 */
 #define getudatamem(u)  \
   check_exp(sizeof((u)->ttuv_), (cast(char*, (u)) + sizeof(UUdata)))
+
+#define getcudatamem(cu)  \
+  check_exp(sizeof((cu)->cuhashash), (cast(char*, (cu)) + sizeof(UCUdata)))
 
 #define setuservalue(L,u,o) \
 	{ const TValue *io=(o); Udata *iu = (u); \

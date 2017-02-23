@@ -424,6 +424,18 @@ int luaV_equalobj (lua_State *L, const TValue *t1, const TValue *t2) {
     case LUA_TLCF: return fvalue(t1) == fvalue(t2);
     case LUA_TSHRSTR: return eqshrstr(tsvalue(t1), tsvalue(t2));
     case LUA_TLNGSTR: return luaS_eqlngstr(tsvalue(t1), tsvalue(t2));
+    case LUA_TCONSTUSERDATA: {
+      if (cuvalue(t1) == cuvalue(t2)) return 1;
+      if ((cuvalue(t1)->metatable == cuvalue(t2)->metatable)
+        && (cuvalue(t1)->len == cuvalue(t2)->len)
+        && (0 == memcmp(getcudatamem(cuvalue(t1)), getcudatamem(cuvalue(t2)), cuvalue(t1)->len)))
+        return 1;
+      if (L == NULL) return 0;
+      tm = fasttm(L, cuvalue(t1)->metatable, TM_EQ);
+      if (tm == NULL)
+        tm = fasttm(L, cuvalue(t2)->metatable, TM_EQ);
+      break;  /* will try TM */
+    }
     case LUA_TUSERDATA: {
       if (uvalue(t1) == uvalue(t2)) return 1;
       else if (L == NULL) return 0;

@@ -395,6 +395,7 @@ LUA_API size_t lua_rawlen (lua_State *L, int idx) {
     case LUA_TSHRSTR: return tsvalue(o)->shrlen;
     case LUA_TLNGSTR: return tsvalue(o)->u.lnglen;
     case LUA_TUSERDATA: return uvalue(o)->len;
+    case LUA_TCONSTUSERDATA: return cuvalue(o)->len;
     case LUA_TTABLE: return luaH_getn(hvalue(o));
     default: return 0;
   }
@@ -414,6 +415,7 @@ LUA_API void *lua_touserdata (lua_State *L, int idx) {
   StkId o = index2addr(L, idx);
   switch (ttnov(o)) {
     case LUA_TUSERDATA: return getudatamem(uvalue(o));
+    case LUA_TCONSTUSERDATA: return getcudatamem(cuvalue(o));
     case LUA_TLIGHTUSERDATA: return pvalue(o);
     default: return NULL;
   }
@@ -435,6 +437,7 @@ LUA_API const void *lua_topointer (lua_State *L, int idx) {
     case LUA_TLCF: return cast(void *, cast(size_t, fvalue(o)));
     case LUA_TTHREAD: return thvalue(o);
     case LUA_TUSERDATA: return getudatamem(uvalue(o));
+    case LUA_TCONSTUSERDATA: return getcudatamem(cuvalue(o));
     case LUA_TLIGHTUSERDATA: return pvalue(o);
     default: return NULL;
   }
@@ -706,6 +709,9 @@ LUA_API int lua_getmetatable (lua_State *L, int objindex) {
     case LUA_TUSERDATA:
       mt = uvalue(obj)->metatable;
       break;
+    case LUA_TCONSTUSERDATA:
+      mt = cuvalue(obj)->metatable;
+      break;
     default:
       mt = G(L)->mt[ttnov(obj)];
       break;
@@ -871,6 +877,9 @@ LUA_API int lua_setmetatable (lua_State *L, int objindex) {
       }
       break;
     }
+    case LUA_TCONSTUSERDATA:
+      api_check(L, 0, "tried to set a constuserdata metatable");
+      break;
     default: {
       G(L)->mt[ttnov(obj)] = mt;
       break;
@@ -1191,6 +1200,21 @@ LUA_API void *lua_newuserdata (lua_State *L, size_t size) {
   return getudatamem(u);
 }
 
+
+LUA_API void *lua_newconstuserdata (lua_State *L, void* data, size_t size) {
+  CUdata *u;
+  struct Table *mt;
+  lua_lock(L);
+  if (ttisnil(L->top - 1))
+    mt = NULL;
+  else
+    mt = hvalue(L->top - 1);
+  u = luaS_newconstudata(L, data, size, mt);
+  setcuvalue(L, L->top - 1, u);
+  luaC_checkGC(L);
+  lua_unlock(L);
+  return getcudatamem(u);
+}
 
 
 static const char *aux_upvalue (StkId fi, int n, TValue **val,
