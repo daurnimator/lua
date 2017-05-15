@@ -565,34 +565,58 @@ static int searcher_preload (lua_State *L) {
   return 1;
 }
 
-
-static void findloader (lua_State *L, const char *name) {
-  int i;
+struct findloader_ctx {
   luaL_Buffer msg;  /* to build error message */
-  luaL_buffinit(L, &msg);
+  const char *name;
+  int i;
+  lua_KContext ctx;
+  lua_KFunction k;
+};
+
+static int findloader_cont (lua_State *L, int status, struct findloader_ctx *ctx);
+
+static int findloader (lua_State *L, const char *name, lua_KContext ctx, lua_KFunction k) {
+  struct findloader_ctx *ctx2;
   /* push 'package.searchers' to index 3 in the stack */
   if (lua_getfield(L, lua_upvalueindex(1), "searchers") != LUA_TTABLE)
     luaL_error(L, "'package.searchers' must be a table");
+  ctx2 = (struct findloader_ctx*)lua_newuserdata(L, sizeof(struct findloader_ctx));
+  luaL_buffinit(L, &ctx2->msg);
+  ctx2->name = name;
+  ctx2->i = 1;
+  ctx2->ctx = ctx;
+  ctx2->k = k;
+  return findloader_cont(L, LUA_OK, ctx2);
+}
+
+static int findloader_cont (lua_State *L, int status, struct findloader_ctx *ctx) {
   /*  iterate over available searchers to find a loader */
-  for (i = 1; ; i++) {
-    if (lua_rawgeti(L, 3, i) == LUA_TNIL) {  /* no more searchers? */
-      lua_pop(L, 1);  /* remove nil */
-      luaL_pushresult(&msg);  /* create error message */
-      luaL_error(L, "module '%s' not found:%s", name, lua_tostring(L, -1));
+  for (; ; ctx->i++) {
+    if (status == LUA_OK) {
+      if (lua_rawgeti(L, 3, ctx->i) == LUA_TNIL) {  /* no more searchers? */
+        lua_pop(L, 1);  /* remove nil */
+        luaL_pushresult(&ctx->msg);  /* create error message */
+        luaL_error(L, "module '%s' not found:%s", ctx->name, lua_tostring(L, -1));
+      }
+      lua_pushstring(L, ctx->name);
+      lua_callk(L, 1, 2, (lua_KContext)ctx, (lua_KFunction)findloader_cont);  /* call it */
+    } else {
+      status = LUA_OK;
     }
-    lua_pushstring(L, name);
-    lua_call(L, 1, 2);  /* call it */
     if (lua_isfunction(L, -2))  /* did it find a loader? */
-      return;  /* module loader found */
+      break;  /* module loader found */
     else if (lua_isstring(L, -2)) {  /* searcher returned error message? */
       lua_pop(L, 1);  /* remove extra return */
-      luaL_addvalue(&msg);  /* concatenate error message */
+      luaL_addvalue(&ctx->msg);  /* concatenate error message */
     }
     else
       lua_pop(L, 2);  /* remove both returns */
   }
+  return ctx->k(L, LUA_OK, ctx->ctx);
 }
 
+static int ll_require_cont (lua_State *L, int status, lua_KContext ctx);
+static int ll_require_cont2 (lua_State *L, int status, lua_KContext ctx);
 
 static int ll_require (lua_State *L) {
   const char *name = luaL_checkstring(L, 1);
@@ -603,10 +627,21 @@ static int ll_require (lua_State *L) {
     return 1;  /* package is already loaded */
   /* else must load package */
   lua_pop(L, 1);  /* remove 'getfield' result */
-  findloader(L, name);
+  return findloader(L, name, (lua_KContext)name, ll_require_cont);
+}
+
+static int ll_require_cont (lua_State *L, int status, lua_KContext ctx) {
+  const char *name = (const char*)ctx;
+  (void)status;
   lua_pushstring(L, name);  /* pass name as argument to module loader */
   lua_insert(L, -2);  /* name is 1st argument (before search data) */
-  lua_call(L, 2, 1);  /* run loader to load module */
+  lua_callk(L, 2, 1, ctx, ll_require_cont2);
+  return ll_require_cont2(L, LUA_OK, ctx);  /* run loader to load module */
+}
+
+static int ll_require_cont2 (lua_State *L, int status, lua_KContext ctx) {
+  const char *name = (const char*)ctx;
+  (void)status;
   if (!lua_isnil(L, -1))  /* non-nil return? */
     lua_setfield(L, 2, name);  /* LOADED[name] = returned value */
   if (lua_getfield(L, 2, name) == LUA_TNIL) {   /* module set no value? */
