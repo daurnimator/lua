@@ -66,6 +66,21 @@ const TValue *luaT_gettm (Table *events, TMS event, TString *ename) {
   else return tm;
 }
 
+Table *luaT_getstringmt (lua_State *L) {
+  CallInfo *ci;
+  for (ci = L->ci;ci != &L->base_ci;ci = ci->previous) {
+    if (isLua(ci)) {
+      LClosure *cl = clLvalue(s2v(ci->func));  /* local reference to function's closure */
+      TValue *up = cl->upvals[0]->v;
+      if (ttnov(up) == LUA_TNIL) {
+        return NULL;
+      } else {
+        return hvalue(up);
+      }
+    }
+  }
+  return G(L)->mt[LUA_TSTRING];
+}
 
 const TValue *luaT_gettmbyobj (lua_State *L, const TValue *o, TMS event) {
   Table *mt;
@@ -75,6 +90,9 @@ const TValue *luaT_gettmbyobj (lua_State *L, const TValue *o, TMS event) {
       break;
     case LUA_TUSERDATA:
       mt = uvalue(o)->metatable;
+      break;
+    case LUA_TSTRING:
+      mt = luaT_getstringmt(L);
       break;
     default:
       mt = G(L)->mt[ttnov(o)];

@@ -728,6 +728,9 @@ LUA_API int lua_getmetatable (lua_State *L, int objindex) {
     case LUA_TUSERDATA:
       mt = uvalue(obj)->metatable;
       break;
+    case LUA_TSTRING:
+      mt = luaT_getstringmt(L);
+      break;
     default:
       mt = G(L)->mt[ttnov(obj)];
       break;
@@ -872,6 +875,20 @@ LUA_API void lua_rawsetp (lua_State *L, int idx, const void *p) {
 }
 
 
+static void setstringmt(lua_State *L, Table *mt) {
+  CallInfo *ci;
+  for (ci = L->ci;ci != &L->base_ci;ci = ci->previous) {
+    if (isLua(ci)) {
+      LClosure *cl = clLvalue(s2v(ci->func));  /* local reference to function's closure */
+      UpVal *uv = cl->upvals[0];
+      sethvalue(L, uv->v, mt);
+      luaC_objbarrier(L, uv, mt);
+      return;
+    }
+  }
+  G(L)->mt[LUA_TSTRING] = mt;
+}
+
 LUA_API int lua_setmetatable (lua_State *L, int objindex) {
   TValue *obj;
   Table *mt;
@@ -899,6 +916,10 @@ LUA_API int lua_setmetatable (lua_State *L, int objindex) {
         luaC_objbarrier(L, uvalue(obj), mt);
         luaC_checkfinalizer(L, gcvalue(obj), mt);
       }
+      break;
+    }
+    case LUA_TSTRING: {
+      setstringmt(L, mt);
       break;
     }
     default: {
@@ -1027,13 +1048,14 @@ LUA_API int lua_load (lua_State *L, lua_Reader reader, void *data,
   status = luaD_protectedparser(L, &z, chunkname, mode);
   if (status == LUA_OK) {  /* no errors? */
     LClosure *f = clLvalue(s2v(L->top - 1));  /* get newly created function */
-    if (f->nupvalues >= 1) {  /* does it have an upvalue? */
+    sethvalue(L, f->upvals[0]->v, G(L)->mt[LUA_TSTRING]); /* set default string metatable */
+    if (f->nupvalues >= 2) {  /* does it have an upvalue? */
       /* get global table from registry */
       Table *reg = hvalue(&G(L)->l_registry);
       const TValue *gt = luaH_getint(reg, LUA_RIDX_GLOBALS);
       /* set global table as 1st upvalue of 'f' (may be LUA_ENV) */
-      setobj(L, f->upvals[0]->v, gt);
-      luaC_barrier(L, f->upvals[0], gt);
+      setobj(L, f->upvals[1]->v, gt);
+      luaC_barrier(L, f->upvals[1], gt);
     }
   }
   lua_unlock(L);

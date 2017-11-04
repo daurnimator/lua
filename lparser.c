@@ -1638,6 +1638,8 @@ static void mainfunc (LexState *ls, FuncState *fs) {
   adjustlocalvars(ls, 1);
   luaK_reserveregs(fs, 1);  /* reserve register for vararg */
   init_exp(&v, VLOCAL, 0);  /* create and... */
+  newupvalue(fs, ls->stringn, &v);  /* ...set environment upvalue */
+  init_exp(&v, VLOCAL, 0);  /* create and... */
   newupvalue(fs, ls->envn, &v);  /* ...set environment upvalue */
   luaX_next(ls);  /* read first token */
   statlist(ls);  /* parse main body */
@@ -1650,7 +1652,7 @@ LClosure *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff,
                        Dyndata *dyd, const char *name, int firstchar) {
   LexState lexstate;
   FuncState funcstate;
-  LClosure *cl = luaF_newLclosure(L, 1);  /* create main closure */
+  LClosure *cl = luaF_newLclosure(L, 2);  /* create main closure */
   setclLvalue2s(L, L->top, cl);  /* anchor it (to avoid being collected) */
   luaD_inctop(L);
   lexstate.h = luaH_new(L);  /* create table for scanner */
@@ -1664,7 +1666,7 @@ LClosure *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff,
   dyd->actvar.n = dyd->gt.n = dyd->label.n = 0;
   luaX_setinput(L, &lexstate, z, funcstate.f->source, firstchar);
   mainfunc(&lexstate, &funcstate);
-  lua_assert(!funcstate.prev && funcstate.nups == 1 && !lexstate.fs);
+  lua_assert(!funcstate.prev && funcstate.nups == 2 && !lexstate.fs);
   /* all scopes should be correctly finished */
   lua_assert(dyd->actvar.n == 0 && dyd->gt.n == 0 && dyd->label.n == 0);
   L->top--;  /* remove scanner's table */

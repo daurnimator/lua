@@ -68,6 +68,7 @@ typedef struct LexState {
   Table *h;  /* to avoid collection/reuse strings */
   struct Dyndata *dyd;  /* dynamic structures used by the parser */
   TString *source;  /* current source name */
+  TString *stringn;  /* string metatable variable name */
   TString *envn;  /* environment variable name */
 } LexState;
 

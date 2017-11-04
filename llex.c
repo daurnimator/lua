@@ -71,6 +71,7 @@ void luaX_init (lua_State *L) {
   int i;
   TString *e = luaS_newliteral(L, LUA_ENV);  /* create env name */
   luaC_fix(L, obj2gco(e));  /* never collect this name */
+  luaC_fix(L, obj2gco(luaS_newliteral(L, "_STRING")));
   for (i=0; i<NUM_RESERVED; i++) {
     TString *ts = luaS_new(L, luaX_tokens[i]);
     luaC_fix(L, obj2gco(ts));  /* reserved words are never collected */
@@ -170,6 +171,7 @@ void luaX_setinput (lua_State *L, LexState *ls, ZIO *z, TString *source,
   ls->linenumber = 1;
   ls->lastline = 1;
   ls->source = source;
+  ls->stringn = luaS_newliteral(L, "_STRING");
   ls->envn = luaS_newliteral(L, LUA_ENV);  /* get env name */
   luaZ_resizebuffer(ls->L, ls->buff, LUA_MINBUFFER);  /* initialize buffer */
 }
