@@ -423,7 +423,9 @@ int luaV_equalobj (lua_State *L, const TValue *t1, const TValue *t2) {
     case LUA_TLIGHTUSERDATA: return pvalue(t1) == pvalue(t2);
     case LUA_TLCF: return fvalue(t1) == fvalue(t2);
     case LUA_TSHRSTR: return eqshrstr(tsvalue(t1), tsvalue(t2));
-    case LUA_TLNGSTR: return luaS_eqlngstr(tsvalue(t1), tsvalue(t2));
+    case LUA_TLNGSTR:
+    case LUA_TEXTSTR:
+      return luaS_eqlngstr(tsvalue(t1), tsvalue(t2));
     case LUA_TUSERDATA: {
       if (uvalue(t1) == uvalue(t2)) return 1;
       else if (L == NULL) return 0;
@@ -529,7 +531,8 @@ void luaV_objlen (lua_State *L, StkId ra, const TValue *rb) {
       setivalue(s2v(ra), tsvalue(rb)->shrlen);
       return;
     }
-    case LUA_TLNGSTR: {
+    case LUA_TLNGSTR:
+    case LUA_TEXTSTR: {
       setivalue(s2v(ra), tsvalue(rb)->u.lnglen);
       return;
     }

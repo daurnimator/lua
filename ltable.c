@@ -125,6 +125,7 @@ static Node *mainposition (const Table *t, int ktt, const Value *kvl) {
     case LUA_TSHRSTR:
       return hashstr(t, tsvalueraw(*kvl));
     case LUA_TLNGSTR:
+    case LUA_TEXTSTR:
       return hashpow2(t, luaS_hashlongstr(tsvalueraw(*kvl)));
     case LUA_TBOOLEAN:
       return hashboolean(t, bvalueraw(*kvl));
@@ -168,6 +169,7 @@ static int equalkey (const TValue *k1, const Node *n2) {
     case LUA_TLCF:
       return fvalue(k1) == fvalueraw(keyval(n2));
     case LUA_TLNGSTR:
+    case LUA_TEXTSTR:
       return luaS_eqlngstr(tsvalue(k1), keystrval(n2));
     default:
       return gcvalue(k1) == gcvalueraw(keyval(n2));

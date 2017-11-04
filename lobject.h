@@ -52,6 +52,7 @@
 /* Variant tags for strings */
 #define LUA_TSHRSTR	(LUA_TSTRING | (0 << 4))  /* short strings */
 #define LUA_TLNGSTR	(LUA_TSTRING | (1 << 4))  /* long strings */
+#define LUA_TEXTSTR	(LUA_TSTRING | (2 << 4))  /* external strings */
 
 
 /* Variant tags for numbers */
@@ -150,6 +151,7 @@ typedef struct TValue {
 #define ttisstring(o)		checktype((o), LUA_TSTRING)
 #define ttisshrstring(o)	checktag((o), ctb(LUA_TSHRSTR))
 #define ttislngstring(o)	checktag((o), ctb(LUA_TLNGSTR))
+#define ttisextstring(o)	checktag((o), ctb(LUA_TEXTSTR))
 #define ttistable(o)		checktag((o), ctb(LUA_TTABLE))
 #define ttisfunction(o)		checktype(o, LUA_TFUNCTION)
 #define ttisclosure(o)		((rttype(o) & 0x1F) == LUA_TFUNCTION)
@@ -346,12 +348,21 @@ typedef union UTString {
 } UTString;
 
 
+#define afterstr(ts) \
+  check_exp(sizeof((ts)->extra), cast(char *, (ts)) + sizeof(UTString))
+
 /*
 ** Get the actual string (array of bytes) from a 'TString'.
 ** (Access to 'extra' ensures that value is really a 'TString'.)
 */
 #define getstr(ts)  \
-  check_exp(sizeof((ts)->extra), cast(char *, (ts)) + sizeof(UTString))
+  (((ts)->tt == LUA_TEXTSTR) ? \
+    *(char**)(afterstr(ts)) : \
+    afterstr(ts))
+
+/* set the pointer of an external string */
+#define setextstr(ts, p) \
+  (*(const char**)(afterstr(ts)) = (p))
 
 
 /* get the actual string (array of bytes) from a Lua value */

@@ -39,7 +39,8 @@
 */
 int luaS_eqlngstr (TString *a, TString *b) {
   size_t len = a->u.lnglen;
-  lua_assert(a->tt == LUA_TLNGSTR && b->tt == LUA_TLNGSTR);
+  lua_assert((a->tt == LUA_TLNGSTR) || (a->tt == LUA_TEXTSTR));
+  lua_assert((b->tt == LUA_TLNGSTR) || (b->tt == LUA_TEXTSTR));
   return (a == b) ||  /* same instance or... */
     ((len == b->u.lnglen) &&  /* equal length and ... */
      (memcmp(getstr(a), getstr(b), len) == 0));  /* equal contents */
@@ -56,7 +57,7 @@ unsigned int luaS_hash (const char *str, size_t l, unsigned int seed) {
 
 
 unsigned int luaS_hashlongstr (TString *ts) {
-  lua_assert(ts->tt == LUA_TLNGSTR);
+  lua_assert((ts->tt == LUA_TLNGSTR) || (ts->tt == LUA_TEXTSTR));
   if (ts->extra == 0) {  /* no hash? */
     ts->hash = luaS_hash(getstr(ts), ts->u.lnglen, ts->hash);
     ts->extra = 1;  /* now it has its hash */
@@ -147,6 +148,18 @@ static TString *createstrobj (lua_State *L, size_t l, int tag, unsigned int h) {
 TString *luaS_createlngstrobj (lua_State *L, size_t l) {
   TString *ts = createstrobj(L, l, LUA_TLNGSTR, G(L)->seed);
   ts->u.lnglen = l;
+  return ts;
+}
+
+TString *luaS_newextstr (lua_State *L, const char *str, size_t l) {
+  TString *ts;
+  GCObject *o;
+  o = luaC_newobj(L, LUA_TEXTSTR, sizeestring);
+  ts = gco2ts(o);
+  ts->hash = G(L)->seed;
+  ts->extra = 0;
+  ts->u.lnglen = l;
+  setextstr(ts, str);
   return ts;
 }
 

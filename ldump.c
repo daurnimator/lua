@@ -126,6 +126,7 @@ static void DumpConstants (const Proto *f, DumpState *D) {
       break;
     case LUA_TSHRSTR:
     case LUA_TLNGSTR:
+    case LUA_TEXTSTR:
       DumpString(tsvalue(o), D);
       break;
     default:

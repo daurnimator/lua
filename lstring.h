@@ -13,6 +13,7 @@
 
 
 #define sizelstring(l)  (sizeof(union UTString) + ((l) + 1) * sizeof(char))
+#define sizeestring  (sizeof(union UTString) + sizeof(const char*))
 
 #define sizeludata(l)	(sizeof(union UUdata) + (l))
 #define sizeudata(u)	sizeludata((u)->len)
@@ -44,6 +45,7 @@ LUAI_FUNC Udata *luaS_newudata (lua_State *L, size_t s);
 LUAI_FUNC TString *luaS_newlstr (lua_State *L, const char *str, size_t l);
 LUAI_FUNC TString *luaS_new (lua_State *L, const char *str);
 LUAI_FUNC TString *luaS_createlngstrobj (lua_State *L, size_t l);
+LUAI_FUNC TString *luaS_newextstr (lua_State *L, const char *str, size_t l);
 
 
 #endif

@@ -410,7 +410,9 @@ LUA_API lua_Unsigned lua_rawlen (lua_State *L, int idx) {
   const TValue *o = index2value(L, idx);
   switch (ttype(o)) {
     case LUA_TSHRSTR: return tsvalue(o)->shrlen;
-    case LUA_TLNGSTR: return tsvalue(o)->u.lnglen;
+    case LUA_TLNGSTR:
+    case LUA_TEXTSTR:
+      return tsvalue(o)->u.lnglen;
     case LUA_TUSERDATA: return uvalue(o)->len;
     case LUA_TTABLE: return luaH_getn(hvalue(o));
     default: return 0;
@@ -502,6 +504,18 @@ LUA_API const char *lua_pushlstring (lua_State *L, const char *s, size_t len) {
   luaC_checkGC(L);
   lua_unlock(L);
   return getstr(ts);
+}
+
+
+LUA_API const char *lua_pushelstring (lua_State *L, const char *s, size_t len) {
+  TString *ts;
+  lua_lock(L);
+  ts = luaS_newextstr(L, s, len);
+  setsvalue2s(L, L->top, ts);
+  api_incr_top(L);
+  luaC_checkGC(L);
+  lua_unlock(L);
+  return s;
 }
 
 

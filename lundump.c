@@ -148,6 +148,7 @@ static void LoadConstants (LoadState *S, Proto *f) {
       break;
     case LUA_TSHRSTR:
     case LUA_TLNGSTR:
+    case LUA_TEXTSTR:
       setsvalue2n(S->L, o, LoadString(S));
       break;
     default:

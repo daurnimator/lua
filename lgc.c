@@ -253,7 +253,8 @@ static void reallymarkobject (global_State *g, GCObject *o) {
   white2gray(o);
   switch (o->tt) {
     case LUA_TSHRSTR:
-    case LUA_TLNGSTR: {
+    case LUA_TLNGSTR:
+    case LUA_TEXTSTR: {
       gray2black(o);
       break;
     }
@@ -757,6 +758,9 @@ static void freeobj (lua_State *L, GCObject *o) {
       break;
     case LUA_TLNGSTR:
       luaM_freemem(L, o, sizelstring(gco2ts(o)->u.lnglen));
+      break;
+    case LUA_TEXTSTR:
+      luaM_freemem(L, o, sizeestring);
       break;
     default: lua_assert(0);
   }
